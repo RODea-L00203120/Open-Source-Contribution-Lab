@@ -29,7 +29,8 @@ Outputs a `scan-report.md` with all findings.
 
 Runs the full contribution workflow inside a container:
 
-- Authenticates with GitHub via a short-lived `GH_TOKEN` (no SSH keys mounted)
+- Authenticates with GitHub via `GH_TOKEN` for API calls
+- Uses SSH (read-only mounted key) for git push operations
 - Forks the target repository to your account
 - Clones the fork, creates a feature branch
 - Makes the required edit and validates the change
@@ -38,20 +39,24 @@ Runs the full contribution workflow inside a container:
 ### 3. Isolation Model
 
 ```
-┌─────────────────────────────────────┐
-│         Host Machine                │
-│  (no repo cloned, no npm install)   │
-│                                     │
-│  ┌───────────────────────────────┐  │
-│  │     Docker Container          │  │
-│  │  - git clone                  │  │
-│  │  - npm install --ignore-scripts│  │
-│  │  - trivy scan                 │  │
-│  │  - gh fork / push / pr create │  │
-│  │                               │  │
-│  │  Destroyed on exit (--rm)     │  │
-│  └───────────────────────────────┘  │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│         Host Machine                     │
+│  (no repo cloned, no npm install)        │
+│                                          │
+│  Provides:                               │
+│  - GH_TOKEN (env var, for gh API calls)  │
+│  - SSH key (read-only mount, for push)   │
+│                                          │
+│  ┌────────────────────────────────────┐  │
+│  │     Docker Container (--rm)        │  │
+│  │  - git clone                       │  │
+│  │  - npm install --ignore-scripts    │  │
+│  │  - trivy scan                      │  │
+│  │  - gh fork / push / pr create      │  │
+│  │                                    │  │
+│  │  Destroyed on exit                 │  │
+│  └────────────────────────────────────┘  │
+└──────────────────────────────────────────┘
 ```
 
 ## Usage
@@ -63,9 +68,12 @@ docker build -t os-contrib-lab .
 # Scan a repo for security issues
 docker run --rm -it os-contrib-lab -c "scan.sh"
 
-# Contribute to a repo (requires GH_TOKEN)
+# Contribute to a repo (requires GH_TOKEN + SSH key)
 # Generate a token at https://github.com/settings/tokens (repo scope)
-docker run --rm -it -e GH_TOKEN=ghp_... os-contrib-lab -c "contribute.sh"
+docker run --rm -it -e GH_TOKEN \
+  -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro \
+  -v ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
+  os-contrib-lab -c "contribute.sh"
 ```
 
 To target a different repository, update the `REPO_URL` / `UPSTREAM_REPO` variable at the top of each script.
@@ -74,6 +82,7 @@ To target a different repository, update the `REPO_URL` / `UPSTREAM_REPO` variab
 
 - **Repo:** [lingdojo/kana-dojo](https://github.com/lingdojo/kana-dojo)
 - **Issue:** [#12088](https://github.com/lingdojo/kana-dojo/issues/12088) — Add new Japan Fact 140
+- **PR:** [#12100](https://github.com/lingdojo/kana-dojo/pull/12100) — Submitted, awaiting maintainer review
 - **Screening verdict:** Safe to contribute (no malicious code), but identified as a contribution/engagement farm
 
 ## License

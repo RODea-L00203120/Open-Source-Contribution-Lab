@@ -24,16 +24,24 @@ if [ -z "${GH_TOKEN:-}" ]; then
 fi
 
 echo "Authenticating with GitHub..."
-gh auth status
+gh auth status || echo "GH_TOKEN set — proceeding with token auth."
 
 git config --global user.name "${GIT_NAME}"
 git config --global user.email "${GIT_EMAIL}"
+git config --global core.pager ""
+
+# Use SSH for git operations
+gh config set git_protocol ssh
 
 # ── Fork and clone ──
 echo ""
 echo "Forking ${UPSTREAM_REPO}..."
 gh repo fork "${UPSTREAM_REPO}" --clone --default-branch-only
 cd "$(basename "${UPSTREAM_REPO}")"
+
+# Ensure origin uses SSH
+FORK_USER=$(gh api user --jq '.login')
+git remote set-url origin "git@github.com:${FORK_USER}/$(basename "${UPSTREAM_REPO}").git"
 
 # ── Branch ──
 echo ""
@@ -75,7 +83,7 @@ PR_URL=$(gh pr create \
   --repo "${UPSTREAM_REPO}" \
   --title "${PR_TITLE}" \
   --body "${PR_BODY}" \
-  --head "${BRANCH_NAME}")
+  --head "${FORK_USER}:${BRANCH_NAME}")
 
 echo ""
 echo "════════════════════════════════════════════════"
