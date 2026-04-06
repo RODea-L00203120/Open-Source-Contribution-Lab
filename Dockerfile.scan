@@ -1,0 +1,21 @@
+FROM node:lts
+
+# System utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    jq \
+    curl \
+    git \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Trivy - vulnerability scanner
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# Working directory for the repo clone
+WORKDIR /repo
+
+# Phase 2 scan script
+COPY scan.sh /usr/local/bin/scan.sh
+RUN chmod +x /usr/local/bin/scan.sh
+
+ENTRYPOINT ["bash"]

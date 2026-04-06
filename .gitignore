@@ -1,0 +1,15 @@
+# Scan output directory (regenerated on each run)
+scan-output/
+
+# Docker scan report (regenerated on each run)
+scan-report.md
+
+# Screening findings (lab-specific, not part of reusable tooling)
+repo-screening.md
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
