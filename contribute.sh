@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+DRY_RUN="${DRY_RUN:-false}"
+
 # ── Configuration (update these for a different project/issue) ──
 UPSTREAM_REPO="lingdojo/kana-dojo"
 ISSUE_NUMBER="12088"
@@ -74,6 +76,20 @@ echo ""
 git add "${TARGET_FILE}"
 git diff --cached --stat
 git commit -m "${COMMIT_MSG}"
+
+if [ "${DRY_RUN}" = "true" ]; then
+  echo ""
+  echo "════════════════════════════════════════════════"
+  echo "  DRY RUN — skipping push and PR creation"
+  echo "  Branch: ${BRANCH_NAME}"
+  echo "  Remote: $(git remote get-url origin)"
+  echo "  Commit: $(git log -1 --oneline)"
+  echo "  PR would target: ${UPSTREAM_REPO} main"
+  echo "  PR head: ${FORK_USER}:${BRANCH_NAME}"
+  echo "════════════════════════════════════════════════"
+  exit 0
+fi
+
 git push origin "${BRANCH_NAME}"
 
 # ── Open PR ──
