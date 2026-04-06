@@ -24,7 +24,6 @@ if [ -z "${GH_TOKEN:-}" ]; then
 fi
 
 echo "Authenticating with GitHub..."
-echo "${GH_TOKEN}" | gh auth login --with-token
 gh auth status
 
 git config --global user.name "${GIT_NAME}"
